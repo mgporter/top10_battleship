@@ -7,6 +7,9 @@
     "build": "webpack",
     "test": "jest",
     "watch": "jest --watchAll",
+    "watch-gameboard": "jest --watch gameboard.test.js",
+    "watch-cell": "jest --watch cell.test.js",
+    "watch-ship": "jest --watch ship.test.js",
     "start": "webpack serve --open"
   },
   "repository": {
