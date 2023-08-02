@@ -1,15 +1,19 @@
 export default function Cell() {
-  let hasShip = false;
+  let _hasShip = false;
   let ship = null;
   let alreadyHit = false;
 
   function addShip(newShip) {
-    if (hasShip) {
+    if (_hasShip) {
       throw new Error('Cannot place a ship on top of an existing ship');
     } else {
-      hasShip = true;
+      _hasShip = true;
       ship = newShip;
     }
+  }
+
+  function hasShip() {
+    return _hasShip;
   }
 
   function getShip() {
@@ -22,18 +26,20 @@ export default function Cell() {
     } else {
       // Return the ship if one is here, otherwise return null
       alreadyHit = true;
-      if (hasShip) return ship;
+      if (_hasShip) return ship;
       return null;
     }
   }
 
+  function beenAttacked() {
+    return alreadyHit;
+  }
+
   return {
     hasShip,
-    alreadyHit,
     addShip,
     getShip,
     addHit,
+    beenAttacked,
   };
 }
-
-module.exports = Cell;

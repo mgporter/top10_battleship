@@ -1,4 +1,5 @@
-const Cell = require('./cell');
+// const Cell = require('./cell');
+import Cell from './cell';
 
 test('reports null on miss', () => {
   const cell = Cell();

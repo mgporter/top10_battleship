@@ -1,9 +1,7 @@
 import './basestyle.css';
 import './style.css';
-import Ship from './ship';
+import buildDom from './dom';
 
-console.log('successful! YES!');
-
-const double = (n) => n * 2;
-
-console.log(double(5));
+const dom = buildDom();
+dom.buildPlayerBoard();
+dom.buildOpponentBoard();

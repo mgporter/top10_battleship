@@ -40,5 +40,3 @@ export default function Ship(name, length) {
     isSunk,
   };
 }
-
-module.exports = Ship;

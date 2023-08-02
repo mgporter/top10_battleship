@@ -1,4 +1,4 @@
-const Ship = require('./ship');
+import Ship from './ship';
 
 test('reports name', () => {
   const testShip = Ship('battleship', 4);
