@@ -22,6 +22,10 @@ module.exports = {
         use: ['style-loader', 'css-loader'],
       },
       {
+        test: /\.(obj|glb)$/i,
+        type: 'asset/resource',
+      },
+      {
         test: /\.m?js$/i,
         exclude: /node_modules/,
         use: {
