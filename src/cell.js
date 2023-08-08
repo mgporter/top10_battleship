@@ -2,13 +2,28 @@ export default function Cell() {
   let _hasShip = false;
   let ship = null;
   let alreadyHit = false;
+  let shipPartNumber = null;
 
-  function addShip(newShip) {
+  function addShip(newShip, partNumber = null) {
     if (_hasShip) {
       throw new Error('Cannot place a ship on top of an existing ship');
     } else {
       _hasShip = true;
       ship = newShip;
+      shipPartNumber = partNumber;
+    }
+  }
+
+  function getShipPartNumber() {
+    return shipPartNumber;
+  }
+
+  function removeShip() {
+    if (!_hasShip) {
+      throw new Error('No ship to remove');
+    } else {
+      _hasShip = false;
+      ship = null;
     }
   }
 
@@ -38,8 +53,10 @@ export default function Cell() {
   return {
     hasShip,
     addShip,
+    getShipPartNumber,
     getShip,
     addHit,
     beenAttacked,
+    removeShip,
   };
 }

@@ -1,20 +1,23 @@
 :root {
-  font-size: 16px;
+  font-size: 14px;
   --app-font: Calibri, 'Gill Sans', 'Gill Sans MT', 'Trebuchet MS', sans-serif;
+  --playerboard-opacity: 0.5;
 }
 
 body {
   font-family: var(--app-font);
   background-color: black;
   background-image: url('./images/crosshairs2.svg'),
-    url('./images/battleship_background2.jpg');
+    url('./images/battleship_background3.jpg');
   background-repeat: no-repeat, no-repeat;
   background-size: 50%, 70%;
-  background-position: 60% -20%, 60% -120%;
+  background-position: 60% -20%, 70% -80%;
   background-blend-mode: normal;
   width: 100vw;
   height: 100vh;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
+  /* overflow: hidden; */
   color: white;
   display: flex;
   justify-content: center;
@@ -27,7 +30,7 @@ div#game-container {
   display: grid;
   gap: 24px;
   grid-template-areas:
-    '.  .  hp hp hp hp hp hp ho ho ho ho'
+    'ah ah hp hp hp hp hp hp ho ho ho ho'
     'ah ah mn mn mn mn mn mn se se se se'
     'ah ah mn mn mn mn mn mn se se se se'
     'ah ah mn mn mn mn mn mn se se se se'
@@ -36,6 +39,9 @@ div#game-container {
     'ah ah mn mn mn mn mn mn as as as as'
     'ah ah mn mn mn mn mn mn as as as as';
   grid-template-columns: repeat(12, minmax(0, 1fr));
+  /* grid-template-columns: 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr; */
+  grid-template-rows: repeat(8, minmax(0, 1fr));
+  transition: 400ms;
 }
 
 header#player {
@@ -54,7 +60,7 @@ header#opponent {
   min-width: 100%;
 }
 
-aside#health {
+aside#health-container {
   grid-area: ah;
 }
 
@@ -66,7 +72,7 @@ section {
   grid-area: se;
 }
 
-aside#stats {
+aside#stats-container {
   grid-area: as;
 }
 
@@ -74,19 +80,157 @@ aside#stats {
 
 header#player,
 header#opponent {
-  font-size: 3rem;
-  line-height: 1rem;
+  font-size: 2.4rem;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
+  position: relative;
+  z-index: 1000;
+}
+
+.message-box {
+  color: white;
+  text-align: center;
+  transition: opacity 200ms;
+  opacity: 0.01;
 }
 
 /* Aside#health styling */
 
-aside#health,
-aside#stats {
+aside#health-container {
   background-color: rgba(255, 255, 255, 0.224);
   border-radius: 24px;
+}
+
+aside#health,
+aside#stats {
+  display: flex;
+  flex-direction: column;
+  padding: 12px;
+  gap: 8px;
+  min-height: calc(100% - 24px);
+  /* position: relative; */
+}
+
+#addShipSelection {
+  display: flex;
+  flex-direction: column;
+  margin-top: 12px;
+  gap: 12px;
+}
+
+#addShipSelection > label {
+  cursor: pointer;
+  position: relative;
+  min-height: 6vh;
+  display: flex;
+  align-items: center;
+}
+
+#addShipSelection input[type='radio'] {
+  appearance: none;
+  width: 0;
+  height: 0;
+  border: 0;
+  margin: 0;
+}
+
+#addShipSelection > label *:not(input) {
+  pointer-events: none;
+}
+
+#addShipSelection img {
+  transition: 100ms;
+}
+
+#addShipSelection > label:hover img {
+  filter: invert(70%);
+}
+
+#addShipSelection input[type='radio']:checked + img {
+  filter: invert(100%);
+}
+
+#addShipSelection label.ship-placed > img {
+  filter: invert(70%);
+}
+
+#addShipSelection div.ship-placed {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 30px;
+  color: rgb(19, 199, 19);
+  font-size: 3rem;
+  font-weight: bold;
+}
+
+.start-game-button {
+  margin-top: 5vh;
+  height: 48px;
+  border-radius: 16px;
+  text-align: center;
+  background-color: black;
+  color: white;
+  font-size: 1.6rem;
+  letter-spacing: 1px;
+  font-weight: bold;
+  border: none;
+  transition: background-color 500ms;
+  animation: 1.3s linear 0s infinite alternate-reverse both running
+    start-button-flash;
+  cursor: pointer;
+}
+
+.start-game-button:hover {
+  background-color: rgb(241, 0, 0);
+  animation: none;
+}
+
+@keyframes start-button-flash {
+  0% {
+    background-color: black;
+  }
+  100% {
+    background-color: rgb(173, 0, 0);
+  }
+}
+
+/* Ship Health Panel */
+
+#health-box-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+#health .ship-health-container {
+  display: grid;
+  width: 100%;
+  height: 7vh;
+  background-color: rgb(226, 226, 226);
+  position: relative;
+  overflow: hidden;
+}
+
+#health .health-box {
+  border: 1px solid rgb(20, 152, 18);
+  background-color: rgb(208, 228, 208);
+}
+
+#health .ship-health-container img {
+  position: absolute;
+  inset: 6px;
+  /* top: 6px;
+  left: 6px; */
+  z-index: 50;
+}
+
+#health .health-box.hit {
+  border: 1px solid rgb(152, 18, 18);
+  background-color: rgb(229, 141, 141);
 }
 
 /* Main styling */
@@ -101,18 +245,25 @@ main {
   perspective-origin: center center;
   transform-style: preserve-3d;
   transform-origin: center;
+  position: relative;
+  z-index: 10;
+  bottom: 20px;
+  transition: none;
 }
 
 #playerboard {
+  /* using top, left, right, bottom position will squash this element */
   display: grid;
-  background-color: rgba(0, 0, 255, 0.318);
+  position: absolute;
+  background-color: rgba(0, 0, 255, var(--playerboard-opacity));
   background-image: radial-gradient(
     circle,
-    rgba(0, 78, 255, 1) 0%,
-    rgba(0, 6, 120, 1) 26%,
+    rgba(0, 78, 255, var(--playerboard-opacity)) 0%,
+    rgba(0, 6, 120, var(--playerboard-opacity)) 26%,
     rgba(14, 31, 255, 0.7) 59%
   );
-  height: 96%;
+  /* height: 96%; */
+  width: 800px;
   aspect-ratio: 1;
   grid-template-columns: repeat(10, 1fr);
   grid-template-rows: repeat(10, 1fr);
@@ -120,25 +271,49 @@ main {
   border-radius: 16px;
   overflow: hidden;
   border: 2px solid rgb(0, 150, 53);
-  position: relative;
+  z-index: 5;
+  transition: none;
   /* top: 0px; */
   /* transition: 200ms; */
 }
 
 .cell {
-  border: 1px solid rgba(102, 130, 255, 0.622);
+  border: 1px solid rgba(102, 130, 255, var(--playerboard-opacity));
 }
 
-.cell:hover {
-  background-color: rgba(122, 122, 122, 0.518);
+:not(.disable-hover, .hit, .miss) > .cell {
+  cursor: pointer;
+}
+
+:not(.disable-hover, .hit, .miss) > .cell:hover {
+  background-color: rgba(122, 122, 122, var(--playerboard-opacity));
+}
+
+.canplace {
+  background-color: rgba(97, 216, 255, var(--playerboard-opacity));
+}
+
+.cannotplace {
+  background-color: rgba(255, 0, 0, var(--playerboard-opacity));
+}
+
+.cell.hit {
+  background-color: rgba(255, 0, 0, var(--playerboard-opacity));
+}
+
+.cell.miss {
+  background-color: rgba(122, 122, 122, var(--playerboard-opacity));
 }
 
 /* Player Canvas */
 
 #playercanvas {
   position: absolute;
-  left: 0;
-  top: 0;
+  /* top: 0px;
+  left: -50px;
+  right: 50px;
+  bottom: 0px; */
+  /* transform: rotateX(55deg); */
   /* border: 2px solid red; */
   pointer-events: none;
   z-index: 100;
@@ -146,16 +321,29 @@ main {
 
 /* Section styling (enemy board) */
 
+header#opponent > div {
+  transition: 500ms;
+  color: rgb(255, 133, 133);
+  font-size: 2.4rem;
+  font-weight: bold;
+  text-align: center;
+  opacity: 0;
+  align-self: flex-end;
+}
+
 section {
   /* background-color: gray; */
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  position: relative;
+  z-index: 1;
 }
 
 #opponentboard {
   display: grid;
+  position: relative;
   background-color: rgba(0, 0, 255, 0.643);
   background-image: radial-gradient(
     circle,
@@ -164,10 +352,143 @@ section {
     rgba(14, 31, 255, 0.3) 59%
   );
   width: 90%;
-  height: 90%;
+  aspect-ratio: 1;
   grid-template-columns: repeat(10, 1fr);
   grid-template-rows: repeat(10, 1fr);
   border-radius: 16px;
   overflow: hidden;
   border: 2px solid rgb(0, 28, 47);
+  box-shadow: 0 0 6px 6px transparent;
 }
+
+.ping-container {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  transform: translate(0px, 0px);
+  display: none;
+  pointer-events: none;
+}
+
+.ping-ring {
+  position: absolute;
+  inset: 0;
+  transform: scale(4);
+  background-image: radial-gradient(
+    circle,
+    rgba(255, 0, 0, 0) 49.9%,
+    rgba(255, 0, 0, 1) 50%,
+    rgba(255, 0, 0, 1) 52%,
+    rgba(255, 0, 0, 0.6) 52%,
+    rgba(255, 0, 0, 0) 70%
+  );
+}
+
+/* #opponentboard::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: scale(1);
+  background-image: radial-gradient(
+    circle,
+    rgba(255, 0, 0, 0) 50%,
+    rgba(255, 0, 0, 1) 50%,
+    rgba(255, 0, 0, 0) 70%
+  );
+} */
+
+/* Aside stats styling */
+
+aside#stats {
+  background-color: rgba(255, 255, 255, 0.224);
+  border-radius: 24px;
+}
+
+/* Animations */
+
+.slide-in {
+  animation: 800ms cubic-bezier(0.12, 1.07, 1, 1) 0s 1 normal forwards running
+    slide-in-from-right;
+}
+
+.fade-in {
+  animation: 400ms linear 0s 1 normal forwards running fade-in;
+}
+
+.fade-out {
+  animation: 400ms linear 0s 1 normal forwards running fade-out;
+}
+
+.boardflash {
+  animation: 1.6s linear 0s infinite alternate both running boardflash;
+}
+
+.boardping > div {
+  animation: 1000ms ease-out 0s 1 normal forwards running boardping;
+}
+
+@keyframes slide-in-from-right {
+  100% {
+    left: 0;
+  }
+}
+
+@keyframes fade-in {
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes fade-out {
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes boardflash {
+  0% {
+    box-shadow: 0 0 6px 6px transparent;
+  }
+  100% {
+    /* box-shadow: 0 0 6px 6px #00e4ffde; */
+    box-shadow: 0 0 6px 6px #d0faffde;
+  }
+}
+
+@keyframes boardping {
+  0% {
+    transform: scale(2);
+  }
+  100% {
+    transform: scale(0);
+  }
+}
+
+/* @keyframes boardping {
+  0% {
+    background-image: radial-gradient(
+      circle,
+      rgba(0, 0, 0, 0) 98%,
+      rgba(0, 0, 0, 1) 100%,
+      rgba(0, 0, 0, 0) 100%
+    );
+  }
+  50% {
+    background-image: radial-gradient(
+      circle,
+      rgba(0, 0, 0, 0) 0%,
+      rgba(0, 0, 0, 1) 2%,
+      rgba(0, 0, 0, 0) 100%
+    );
+  }
+  100% {
+    background-image: radial-gradient(
+      circle,
+      rgba(0, 0, 0, 0) 0%,
+      rgba(0, 0, 0, 1) 2%,
+      rgba(0, 0, 0, 0) 4%
+    );
+  }
+} */

@@ -1,4 +1,4 @@
-import { c } from './constants';
+import { C } from './constants';
 
 export function doRandomAttack(board) {
   // Attack a random, non-attacked cell
@@ -82,7 +82,7 @@ export function FollowUpAttack(board, startingCoordinates) {
     // Get coordinates of a random, adjacent space
     let randomNumber = Math.floor(Math.random() * directions.length);
     let randomDirection = directions[randomNumber];
-    let randomPath = c.paths[randomDirection];
+    let randomPath = C.paths[randomDirection];
     let newCoordinates = [
       startingRow + randomPath[0],
       startingColumn + randomPath[1],
@@ -96,7 +96,7 @@ export function FollowUpAttack(board, startingCoordinates) {
       removeFromArray(directions, randomDirection);
       randomNumber = Math.floor(Math.random() * directions.length);
       randomDirection = directions[randomNumber];
-      randomPath = c.paths[randomDirection];
+      randomPath = C.paths[randomDirection];
       newCoordinates = [
         startingRow + randomPath[0],
         startingColumn + randomPath[1],
@@ -130,7 +130,7 @@ export function FollowUpAttack(board, startingCoordinates) {
       !board.isInBounds(newCoordinates) ||
       board.getCell(newCoordinates).beenAttacked()
     ) {
-      return reverseAttack();
+      return reverseAttack(directionPath);
     } else {
       // Otherwise, we can just increment the iterator to keep going in this direction
       followUpIteration++;

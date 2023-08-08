@@ -4,7 +4,6 @@ export default function Gameboard(rows, columns) {
   const board = [];
   const receivedAttacksHistory = [];
   const ships = [];
-  let shipCounter = 1; // used as a unique id for each ship
 
   for (let i = 0; i < rows; i++) {
     const row = [];
@@ -46,55 +45,63 @@ export default function Gameboard(rows, columns) {
   function isInBounds(coordinates) {
     const row = coordinates[0];
     const column = coordinates[1];
-    if (row >= rows || column >= columns) {
+    if (row >= rows || column >= columns || row < 0 || column < 0) {
       return false;
     } else {
       return true;
     }
   }
 
-  function canPlace(ship, ...coordinates) {
+  function canPlace(shipSize, coordinates) {
     // Returns true if a ship is placeable at the given coordinates,
     // otherwise return false
     const coordinateCount = coordinates.length;
-
-    if (ship.getLength() > coordinateCount) return false;
+    if (shipSize > coordinateCount) return false;
 
     for (let i = 0; i < coordinateCount; i++) {
       const row = coordinates[i][0];
       const column = coordinates[i][1];
-      if (row > rows - 1 || column > columns - 1) return false;
+      if (!isInBounds([row, column])) return false;
       if (board[row][column].hasShip()) return false;
     }
 
     return true;
   }
 
-  function placeShip(ship, ...coordinates) {
+  function placeShip(ship, coordinates) {
     const coordinateCount = coordinates.length;
+
     if (ship.getLength() !== coordinateCount)
       throw new Error("Ship's length does not match coordinates passed");
 
-    // give the ship a unique id when placed on the gameboard
-    ship.setId(shipCounter);
-    shipCounter++;
+    // If the ship is already on the board, we need to remove it first
+    if (ship.isPlaced === true) {
+      board.forEach((row) => {
+        row.forEach((cell) => {
+          if (cell.getShip() === ship) {
+            cell.removeShip();
+          }
+        });
+      });
+    }
 
     const cellsToAdd = [];
 
     for (let i = 0; i < coordinateCount; i++) {
       const row = coordinates[i][0];
       const column = coordinates[i][1];
-      if (row > rows - 1 || column > columns - 1)
-        throw new Error('Coordinates are out of bounds');
-      if (board[row][column].hasShip())
-        throw new Error('Cannot place a ship on top of another ship');
+      // if (row > rows - 1 || column > columns - 1)
+      //   throw new Error('Coordinates are out of bounds');
+      // if (board[row][column].hasShip())
+      //   throw new Error('Cannot place a ship on top of another ship');
 
       // push the cells into an array until we can be sure that they all are empty
       cellsToAdd.push(board[row][column]);
     }
 
     ships.push(ship);
-    cellsToAdd.forEach((cell) => cell.addShip(ship));
+    ship.isPlaced = true;
+    cellsToAdd.forEach((cell, i) => cell.addShip(ship, i + 1));
   }
 
   function getShipAtCell(coordinates) {
@@ -145,6 +152,18 @@ export default function Gameboard(rows, columns) {
     };
   }
 
+  function getNumberOfShipsByName(shipName) {
+    let counter = 0;
+    board.forEach((row) => {
+      row.forEach((cell) => {
+        if (cell.getShip() && cell.getShip().getName() === shipName) {
+          counter++;
+        }
+      });
+    });
+    return counter;
+  }
+
   return {
     getRows,
     getColumns,
@@ -159,5 +178,6 @@ export default function Gameboard(rows, columns) {
     receiveAttack,
     getLog,
     getShipReport,
+    getNumberOfShipsByName,
   };
 }
