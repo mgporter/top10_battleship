@@ -139,13 +139,6 @@ export default function Model() {
   //   animate();
   // });
 
-  // Update user about how many models have loaded
-  let modelLoadCounter = 0;
-  window.addEventListener('model_loaded', () => {
-    modelLoadCounter++;
-    console.log(`${modelLoadCounter} models loaded`);
-  });
-
   // The grid is useful for debugging as we can use it to align the 3d canvas space
   // with the CSS grid in the DOM
   // loadModel(gridGLB, 'grid', 'glb').then((model) => {
@@ -286,6 +279,58 @@ export default function Model() {
 
     scene.add(ship);
     animate();
+  }
+
+  const animationsObjects = [];
+
+  let carrier;
+  animate2();
+
+  window.addEventListener('wheel', () => {
+    carrier = ships['carrier'];
+    console.log(carrier);
+    createSinkAnimation({
+      mesh: carrier,
+      startPosition: new THREE.Vector3(0, 200, 0),
+      endPosition: new THREE.Vector3(0, 0, 0),
+    });
+  });
+
+  function createSinkAnimation({ mesh, startPosition, endPosition }) {
+    mesh.userData.mixer = new THREE.AnimationMixer(mesh);
+    let track = new THREE.VectorKeyframeTrack(
+      '.position',
+      [0, 1, 2],
+      [
+        startPosition.x,
+        startPosition.y,
+        startPosition.z,
+        endPosition.x,
+        endPosition.y,
+        endPosition.z,
+      ]
+    );
+    const animationClip = new THREE.AnimationClip(null, 5, [track]);
+    const animationAction = mesh.userData.mixer.clipAction(animationClip);
+    animationAction.setLoop(THREE.LoopRepeat);
+    animationAction.play();
+    mesh.userData.clock = new THREE.Clock();
+    animationsObjects.push(mesh);
+  }
+
+  function threeRender() {
+    renderer.render(scene, camera);
+
+    animationsObjects.forEach((mesh) => {
+      if (mesh.userData.clock && mesh.userData.mixer) {
+        mesh.userData.mixer.update(mesh.userData.clock.getDelta());
+      }
+    });
+  }
+
+  function animate2() {
+    requestAnimationFrame(animate);
+    threeRender();
   }
 
   function animate() {

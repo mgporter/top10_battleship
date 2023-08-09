@@ -13,7 +13,7 @@ export default function MessageBox() {
     // If the message box is at opacity 0, we just write the message. This can happen
     // if a user selects another ship quickly
     if (messageBox.style.opacity == 0) {
-      messageBox.textContent = message;
+      messageBox.innerHTML = message;
       messageBox.style.opacity = 1;
     } else {
       // Otherwise, set the opacity to 0. This will start a transition, and we will
@@ -22,7 +22,7 @@ export default function MessageBox() {
       messageBox.addEventListener(
         'transitionend',
         () => {
-          messageBox.textContent = message;
+          messageBox.innerHTML = message;
           messageBox.style.opacity = 1;
         },
         { once: true }
@@ -37,16 +37,6 @@ export default function MessageBox() {
   function getElement() {
     return messageBox;
   }
-
-  // function deleteMessageBox(index) {
-  //   const box = document.getElementById(`message-box-${index}`);
-  //   box.remove();
-  // }
-
-  // function deleteAllMessageBoxes() {
-  //   const boxes = document.querySelectorAll('.message-box');
-  //   boxes.forEach((box) => box.remove());
-  // }
 
   return {
     write,

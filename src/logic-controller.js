@@ -4,19 +4,47 @@ import { doRandomAttack, FollowUpAttack } from './attack';
 import { C } from './constants';
 
 export default function LogicController() {
-  // Create players
-  const rows = C.gameboardRows;
-  const columns = C.gameboardColumns;
-  const player1 = Player(rows, columns);
-  const player2 = Player(rows, columns);
+  // Debugging flags
+  let skipShipPlacement = true;
+  let showEnemyShips = false;
+  let showPlayerShips = false;
+  let skipToEndGameDialog = false;
+  let playerGoesFirst = true; // This is not set up yet
+  C.gameSpeed = 1;
 
-  const p1board = player1.getBoard();
-  const p2board = player2.getBoard();
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'q') {
+      showEndOfGameDialog();
+    }
+  });
 
-  let playerGoesFirst = true;
+  window.addEventListener('gamespeed_change', (e) => {
+    const value = e.detail.value;
+    C.gameSpeed = value;
+    document.documentElement.style.setProperty('--game-speed', C.gameSpeed);
+  });
 
-  // Build DOM
-  const dom = DomManager(player1, player2);
+  document.documentElement.style.setProperty('--game-speed', C.gameSpeed);
+
+  let rows, columns, player1, player2, p1board, p2board, dom;
+
+  initialize();
+
+  function initialize() {
+    document.body.textContent = '';
+
+    // Create players
+    rows = C.gameboardRows;
+    columns = C.gameboardColumns;
+    player1 = Player(rows, columns);
+    player2 = Player(rows, columns);
+
+    p1board = player1.getBoard();
+    p2board = player2.getBoard();
+
+    // Build DOM
+    dom = DomManager(player1, player2);
+  }
 
   // Start add ship phase once all models are loaded
   window.addEventListener('all_models_loaded', () => {
@@ -26,12 +54,20 @@ export default function LogicController() {
   window.addEventListener('ship_placed', (e) => {
     const shipName = e.detail.shipName;
     const targetShip = player1.getShipByName(shipName);
-    p1board.placeShip(targetShip, e.detail.coordinates);
+    p1board.placeShip(targetShip, e.detail.coordinates, e.detail.direction);
   });
 
-  // setTimeout(() => {
-  //   window.dispatchEvent(new Event('start_game'));
-  // }, 1000);
+  if (skipShipPlacement) {
+    setTimeout(() => {
+      window.dispatchEvent(new Event('start_game'));
+    }, 1000);
+  }
+
+  if (skipToEndGameDialog) {
+    setTimeout(() => {
+      showEndOfGameDialog();
+    }, 1000);
+  }
 
   // Start the game loop when the user presses the red start button
   window.addEventListener('start_game', () => {
@@ -49,6 +85,39 @@ export default function LogicController() {
 
   function playerAttack() {
     dom.playerSelectAttack();
+    if (showEnemyShips) {
+      showShipsOnBoard('opponent');
+    }
+    if (showPlayerShips) {
+      showShipsOnBoard('player');
+    }
+  }
+
+  function showShipsOnBoard(who) {
+    if (who === 'opponent') {
+      player2.getShips().forEach((ship) => {
+        dom.displayShipOnOpponentBoard(ship);
+      });
+      p2board.getCells().forEach((row, i) => {
+        row.forEach((cell, j) => {
+          if (cell.hasShip()) {
+            const cell = dom.getCellFromCoordinates('opponent', i, j);
+            cell.classList.add('hit');
+          }
+        });
+      });
+      showEnemyShips = false; // make sure this only runs once
+    } else if (who === 'player') {
+      p1board.getCells().forEach((row, i) => {
+        row.forEach((cell, j) => {
+          if (cell.hasShip()) {
+            const cell = dom.getCellFromCoordinates('player', i, j);
+            cell.classList.add('hit');
+          }
+        });
+      });
+      showPlayerShips = false; // make sure this only runs once
+    }
   }
 
   window.addEventListener('player_target_selected', (e) => {
@@ -58,16 +127,40 @@ export default function LogicController() {
     const ship = p2board.receiveAttack([row, column]);
 
     if (ship) {
-      dom.displayPlayerHit(row, column);
+      if (ship.isSunk()) {
+        dom.displayPlayerHitAfterSink(row, column, ship);
+      } else {
+        dom.displayPlayerHit(row, column);
+      }
     } else {
       dom.displayPlayerMiss(row, column);
     }
-    setTimeout(enemyAttack, 2000);
+
+    // After the player's attack, we check to see if the last ship was sunk.
+    const shipReport = p2board.getShipReport();
+    if (
+      shipReport.shipsTotal === shipReport.shipsSunk &&
+      shipReport.shipsTotal !== 0
+    ) {
+      showEndOfGameDialog('player');
+    } else {
+      setTimeout(enemyAttack, 2000 * C.gameSpeed);
+    }
   });
 
   window.addEventListener('ready_for_player_attack', () => {
     console.log('window received ready for player attack event');
-    playerAttack();
+
+    // After the enemy attack, this event is fired. So we check to see if the enemy sunk the last ship
+    const shipReport = p1board.getShipReport();
+    if (
+      shipReport.shipsSunk === shipReport.shipsTotal &&
+      shipReport.shipsTotal !== 0
+    ) {
+      showEndOfGameDialog('opponent');
+    } else {
+      playerAttack();
+    }
   });
 
   let followUpAttackResult = null;
@@ -85,7 +178,7 @@ export default function LogicController() {
         attackCoordinates = followUpAttack.attack(followUpAttackResult);
       } catch (e) {
         // This is a complex algorithm. If an error is thrown, we just abandon the follow-up attack
-        console.log(e);
+        console.log(e.message);
         followUpAttackResult = null;
         followUpAttack = null;
         commenceRandomAttack();
@@ -108,8 +201,6 @@ export default function LogicController() {
       commenceRandomAttack();
     } else {
       // This is the normal random attack loop that will be used most of the time
-      attackCoordinates = doRandomAttack(p1board);
-      ship = p1board.receiveAttack(attackCoordinates);
       commenceRandomAttack();
     }
 
@@ -130,30 +221,14 @@ export default function LogicController() {
     // After the displayOpponentHit/Miss functions run, they will send the 'ready_for_player_attack' event back
   }
 
+  function showEndOfGameDialog(winner = 'player') {
+    dom.disableInteractivity();
+    dom.generateEndOfGameReport(winner);
+  }
+
   /* 
-  Game loop
-
-  opponent places ships: get random coordinates/direction, find if ship can be placed, then place
-
-  Write message instructions to player to fire
-  Player selects spot to shoot
-  Shooting animation
-  opponent board: Cell is highlighted gray with tiny x (miss), or red with tiny circle (hit)
-  message to player on result
-  log to lower right side aside
-
-  Message to player that comp is firing
-  flash targeted square
-  square turns gray or red
-  message to player on result
-  log to lower right side
-
-  Continue loop
-
-  If enemy ship sunk: picture of ship is placed on opponent board
-  message to player
-
-  If player ship sunk;
-  ship turns upside down
+  Last features:
+  Attribution dialog
+  player's ships turn upside down on sink
   */
 }

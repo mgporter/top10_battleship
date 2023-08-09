@@ -14,8 +14,10 @@ export default function ShipPlacement(board = null, addModelToScene = null) {
   let firstPlacement = true;
   const playerBoard = document.getElementById('playerboard');
   const addShipFieldset = document.getElementById('addShipSelection');
+  const healthPanel = document.querySelector('aside#health-container');
   const placedShips = [];
   const messageBox = MessageBox();
+  console.log('ShipPlacementcalled');
 
   function showPlayerBoardHoverPlacements(newName) {
     shipName = newName;
@@ -26,6 +28,9 @@ export default function ShipPlacement(board = null, addModelToScene = null) {
     readyToPlace = false;
 
     if (firstPlacement) {
+      healthPanel.classList.remove('boardflash');
+      playerBoard.classList.remove('disable-hover');
+      playerBoard.classList.add('boardflash');
       addPlacementEventListeners();
     }
 
@@ -146,6 +151,7 @@ export default function ShipPlacement(board = null, addModelToScene = null) {
       new CustomEvent('ship_placed', {
         detail: {
           shipName,
+          direction: directions[shipDirectionIndex],
           coordinates: directionToCoordinates(
             [mouseoverCellRow, mouseoverCellColumn],
             shipSize,
@@ -164,6 +170,9 @@ export default function ShipPlacement(board = null, addModelToScene = null) {
     addedCompleteMark.textContent = '✓';
 
     label.appendChild(addedCompleteMark);
+
+    // Remove boardflash in case it is still on
+    playerBoard.classList.remove('boardflash');
 
     // Make a list of placed ships and send a signal when all have been added
     if (!placedShips.includes(shipName)) placedShips.push(shipName);

@@ -2,6 +2,8 @@ export default function Ship(name, length) {
   let hits = 0;
   let shipId = null;
   let isPlaced = false;
+  let direction = '';
+  let startingCoordinates = [];
 
   function getName() {
     return name;
@@ -40,5 +42,7 @@ export default function Ship(name, length) {
     getHitCount,
     isSunk,
     isPlaced,
+    direction,
+    startingCoordinates,
   };
 }

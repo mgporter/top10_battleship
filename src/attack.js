@@ -130,6 +130,7 @@ export function FollowUpAttack(board, startingCoordinates) {
       !board.isInBounds(newCoordinates) ||
       board.getCell(newCoordinates).beenAttacked()
     ) {
+      reverseAttackFlag = true;
       return reverseAttack(directionPath);
     } else {
       // Otherwise, we can just increment the iterator to keep going in this direction

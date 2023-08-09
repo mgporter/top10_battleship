@@ -2,9 +2,14 @@ import { C } from './constants';
 import Model from './models';
 import ShipPlacement from './ship-placement';
 import MessageBox from './messagebox';
+import gitHubIconPic from './images/github-logo.png';
 
 export default function DomManager(player1, player2) {
   let shipPlacement;
+  let winner;
+  let endGameReportOpen = false;
+
+  const playTimeBegin = Date.now();
 
   const p1board = player1.getBoard();
   const p2board = player2.getBoard();
@@ -15,9 +20,11 @@ export default function DomManager(player1, player2) {
   model.resizeCanvasToDisplaySize();
 
   const messageBox = MessageBox();
+  messageBox.write('Loading models...');
 
   // Start the game with the mainElement in the middle
   movePlayerboardToCenter(true);
+  buildProgressBar();
 
   // disableZoom();
 
@@ -25,8 +32,6 @@ export default function DomManager(player1, player2) {
     const mainElement = document.querySelector('main');
     const mb = messageBox.getElement();
 
-    // const playerCanvas = document.getElementById('playercanvas');
-    // const oldWidth = window.innerWidth;
     const offsetX = window.innerWidth * 0.14;
     let transitionDone = false;
 
@@ -35,9 +40,7 @@ export default function DomManager(player1, player2) {
       mb.style.transition = 'opacity 200ms';
       mainElement.style.transform = `translate(${offsetX}px, 0)`;
       mb.style.transform = `translate(${offsetX}px, 0)`;
-      // window.addEventListener('resize', changeMainelementOffset);
     } else {
-      // window.removeEventListener('resize', changeMainelementOffset);
       mainElement.style.transition = 'transform 400ms';
       mb.style.transition = 'opacity 200ms, transform 400ms';
       mainElement.style.transform = `translate(0px, 0)`;
@@ -57,15 +60,6 @@ export default function DomManager(player1, player2) {
         cancelAnimationFrame(animation);
       }
     }
-  }
-
-  function changeMainelementOffset() {
-    const newWidth = window.innerWidth;
-    let deltaX = (oldWidth - newWidth) * 0.2;
-    if (deltaX > offsetX) deltaX = offsetX;
-    mainElement.style.transform = `translate(${offsetX - deltaX}px, 0)`;
-    console.log('resize from dom');
-    model.resizeCanvasToDisplaySize();
   }
 
   function disableZoom() {
@@ -88,6 +82,8 @@ export default function DomManager(player1, player2) {
     );
   }
 
+  function modelCredits() {}
+
   function buildPageStructure() {
     const gameContainer = document.createElement('div');
     gameContainer.id = 'game-container';
@@ -97,6 +93,28 @@ export default function DomManager(player1, player2) {
 
     const opponentHeader = document.createElement('header');
     opponentHeader.id = 'opponent';
+
+    const topLeftContainer = document.createElement('div');
+
+    const createdByContainer = document.createElement('a');
+    createdByContainer.setAttribute(
+      'href',
+      'https://github.com/mgporter/top10_battleship'
+    );
+    createdByContainer.setAttribute('target', '_blank');
+    createdByContainer.id = 'created-by-container';
+    const createdBy = document.createElement('span');
+    createdBy.textContent = 'Created by mgporter';
+    const gitHubIcon = document.createElement('img');
+    gitHubIcon.src = gitHubIconPic;
+    gitHubIcon.alt = 'Source code hosted on GitHub';
+    createdByContainer.append(createdBy, gitHubIcon);
+
+    const credits = document.createElement('a');
+    credits.textContent = 'Model credits';
+    credits.id = 'model-credits';
+    topLeftContainer.append(createdByContainer, credits);
+    opponentHeader.appendChild(topLeftContainer);
 
     const healthContainer = document.createElement('aside');
     healthContainer.id = 'health-container';
@@ -122,6 +140,36 @@ export default function DomManager(player1, player2) {
 
     document.body.appendChild(gameContainer);
   }
+
+  function buildProgressBar() {
+    const progress = document.createElement('progress');
+    const mb = messageBox.getElement();
+
+    progress.id = 'model-load-progress-bar';
+    progress.setAttribute('max', C.numberOfModelsToLoad);
+    progress.value = 0;
+
+    mb.appendChild(progress);
+
+    window.addEventListener('model_loaded', () => {
+      // Update user about how many models have loaded
+      progress.value = progress.value + 1;
+      if (progress.value >= C.numberOfModelsToLoad) {
+        // Writing to the message box also deletes it's children elements, like the progress bar
+        messageBox.write(
+          'All models loaded. Click on a ship to begin placement.'
+        );
+      }
+    });
+  }
+
+  // function incrementProgressBar() {
+  //   const progress = document.getElementById('progress');
+  //   console.log('add progress');
+  //   if (!progress) return;
+
+  //   progress.value = progress.value + 1;
+  // }
 
   function createPlayerboard() {
     const playerBoard = document.createElement('div');
@@ -175,6 +223,26 @@ export default function DomManager(player1, player2) {
   function createStatsAside() {
     const statsAside = document.createElement('aside');
     statsAside.id = 'stats';
+
+    const battleStatsLink = document.createElement('button');
+    battleStatsLink.textContent = 'Display battle stats';
+    battleStatsLink.addEventListener('click', () => {
+      generateEndOfGameReport();
+    });
+
+    // Close the end game report when the user clicks-off
+    // window.addEventListener('click', (e) => {
+    //   if (!endGameReportOpen) return;
+    //   if (e.target.matches('#end-game-report-container')) return;
+    //   console.log('close');
+    //   document.getElementById('end-game-report-container').close();
+    // });
+
+    statsAside.appendChild(battleStatsLink);
+
+    const controls = createGameSpeedControls();
+    statsAside.appendChild(controls);
+
     return statsAside;
   }
 
@@ -229,11 +297,14 @@ export default function DomManager(player1, player2) {
     // Retrieve the ship placement module
     shipPlacement = ShipPlacement(p1board, model.addModelToScene);
 
+    document.getElementById('health-container').classList.add('boardflash');
+    document.getElementById('playerboard').classList.add('disable-hover');
+
     addShipSelection.addEventListener(
       'click',
       function handleShipSelection(event) {
         // Check to make sure selection is valid
-        if (event.target.tagName !== 'INPUT') return;
+        if (!event.target.matches('input')) return;
         const target = addShipSelection.querySelector(
           'input[type="radio"]:checked'
         );
@@ -262,8 +333,64 @@ export default function DomManager(player1, player2) {
     );
   }
 
+  function createGameSpeedControls() {
+    const controlsContainer = document.createElement('div');
+    controlsContainer.id = 'gamespeed-container';
+
+    const label = document.createElement('label');
+    label.textContent = 'Gamespeed:';
+    label.setAttribute('for', 'gamespeed');
+
+    const slider = document.createElement('input');
+    slider.id = 'gamespeed-slider';
+    slider.setAttribute('type', 'range');
+    slider.setAttribute('name', 'gamespeed');
+    slider.setAttribute('list', 'gamespeed-values');
+    slider.setAttribute('min', '0.2');
+    slider.setAttribute('max', '1.4');
+    slider.setAttribute('step', '0.4');
+    slider.setAttribute('value', '1');
+
+    const datalist = document.createElement('datalist');
+    datalist.id = 'gamespeed-values';
+
+    const option1 = document.createElement('option');
+    option1.value = 0.2;
+    option1.setAttribute('label', 'rapid');
+
+    const option2 = document.createElement('option');
+    option2.value = 0.6;
+    option2.setAttribute('label', 'quick');
+
+    const option3 = document.createElement('option');
+    option3.value = 1;
+    option3.setAttribute('label', 'normal');
+
+    const option4 = document.createElement('option');
+    option4.value = 1.4;
+    option4.setAttribute('label', 'slow');
+
+    datalist.append(option1, option2, option3, option4);
+
+    controlsContainer.append(label, slider, datalist);
+
+    slider.addEventListener('click', () => {
+      window.dispatchEvent(
+        new CustomEvent('gamespeed_change', { detail: { value: slider.value } })
+      );
+    });
+
+    return controlsContainer;
+  }
+
   function initiateDomForGameLoop() {
+    console.log('initiateDomForGameLoop');
     shipPlacement.clearPlacementEventListeners();
+
+    const flashingElements = document.querySelectorAll('.boardflash');
+    flashingElements.forEach((element) =>
+      element.classList.remove('boardflash')
+    );
 
     const healthPanel = document.getElementById('health');
     healthPanel.style.transition = 'opacity 600ms linear';
@@ -292,7 +419,8 @@ export default function DomManager(player1, player2) {
 
     const opponentHeading = document.createElement('div');
     opponentHeading.style.opacity = 0;
-    opponentHeading.textContent = 'Opponent status';
+    opponentHeading.textContent = 'Opponent board';
+    opponentHeading.id = 'opponent-board-heading';
     document.querySelector('header#opponent').appendChild(opponentHeading);
 
     opponentBoard.style.transition = `transform 800ms cubic-bezier(0,.33,.31,1) 400ms`;
@@ -307,6 +435,7 @@ export default function DomManager(player1, player2) {
         'transitionend',
         () => {
           opponentHeading.style.opacity = 1;
+          createGameSpeedControls();
           window.dispatchEvent(new Event('dom_ready_for_game_loop'));
         },
         { once: true }
@@ -322,7 +451,8 @@ export default function DomManager(player1, player2) {
     header.textContent = 'Damage Report';
 
     const shipsAlive = document.createElement('p');
-    shipsAlive.innerHTML = `<span class="ships-sunk">0</span> of <span class="ships-total">0</span> ships sunk.`;
+    const shipsTotal = p1board.getShipReport().shipsTotal;
+    shipsAlive.innerHTML = `<span class="ships-sunk">0</span> of <span class="ships-total">${shipsTotal}</span> ships sunk.`;
     healthPanel.append(header, shipsAlive);
 
     const healthBoxContainer = document.createElement('div');
@@ -366,6 +496,7 @@ export default function DomManager(player1, player2) {
     const playerBoard = document.getElementById('playerboard');
     const opponentBoard = document.getElementById('opponentboard');
     console.log('playerselectattack');
+    opponentBoard.classList.remove('disable-hover');
     messageBox.write('Sir, where should we target?');
 
     playerBoard.classList.add('disable-hover');
@@ -379,7 +510,7 @@ export default function DomManager(player1, player2) {
       (e) => {
         console.log(e);
         console.log('clicked for attack to opponent');
-
+        if (!e.target.matches('div.cell')) return;
         const row = e.target.dataset.row;
         const column = e.target.dataset.column;
         const cell = getCellFromCoordinates('opponent', row, column);
@@ -394,6 +525,7 @@ export default function DomManager(player1, player2) {
         opponentBoard.classList.remove('boardflash');
         playerBoard.classList.remove('disable-hover');
 
+        opponentBoard.classList.add('disable-hover');
         pingBoard('opponent', row, column, () => {
           window.dispatchEvent(
             new CustomEvent('player_target_selected', {
@@ -464,20 +596,121 @@ export default function DomManager(player1, player2) {
     cell.classList.add('miss');
   }
 
+  function displayPlayerHitAfterSink(row, column, ship) {
+    console.log('player sunk ship');
+    messageBox.write(
+      `Congratulations, sir! We sunk their <span class="ship">${
+        C.ships[ship.getName()].displayName
+      }</span>.`
+    );
+    const cell = getCellFromCoordinates('opponent', row, column);
+    displayShipOnOpponentBoard(ship);
+    cell.classList.add('hit');
+  }
+
+  function displayShipOnOpponentBoard(ship) {
+    const shipImgUrl = C.ships[ship.getName()].topimg;
+    const shipSize = ship.getLength();
+    const shipDirection = ship.direction;
+    const row = ship.startingCoordinates[0];
+    const column = ship.startingCoordinates[1];
+
+    const opponentBoard = document.getElementById('opponentboard');
+    const imgContainer = document.createElement('div');
+    imgContainer.classList.add('ship-icon-container');
+
+    function setImagePosition() {
+      const opponentBoardRect = opponentBoard.getBoundingClientRect();
+      const cell = getCellFromCoordinates('opponent', row, column);
+      const cellRect = cell.getBoundingClientRect();
+
+      // We need to adjust the translation of the img based on its direction
+      let offsetLeft = 0;
+      let offsetTop = 0;
+      if (shipDirection === 'left') {
+        imgContainer.style.rotate = '0deg';
+      } else if (shipDirection === 'right') {
+        imgContainer.style.rotate = '180deg';
+        offsetLeft = (shipSize - 1) * cellRect.width * -1;
+      } else if (shipDirection === 'up') {
+        imgContainer.style.rotate = '90deg';
+        offsetLeft = Math.floor(shipSize / 2) * cellRect.width * -1;
+        offsetTop = Math.floor(shipSize / 2) * cellRect.height;
+        // For ships of length 2, 4, 6, etc, we have to make another adjustment
+        if (shipSize % 2 === 0) {
+          offsetLeft += cellRect.width / 2;
+          offsetTop -= cellRect.height / 2;
+        }
+      } else if (shipDirection === 'down') {
+        imgContainer.style.rotate = '-90deg';
+        offsetLeft = Math.floor(shipSize / 2) * cellRect.width * -1;
+        offsetTop = Math.floor(shipSize / 2) * cellRect.height * -1;
+        // For ships of length 2, 4, 6, etc, we have to make another adjustment
+        if (shipSize % 2 === 0) {
+          offsetLeft += cellRect.width / 2;
+          offsetTop += cellRect.height / 2;
+        }
+      }
+
+      imgContainer.style.width = `${cellRect.width * shipSize}px`;
+      imgContainer.style.height = `${cellRect.height}px`;
+      imgContainer.style.left = `${
+        cellRect.left - opponentBoardRect.left + offsetLeft
+      }px`;
+      imgContainer.style.top = `${
+        cellRect.top - opponentBoardRect.top + offsetTop
+      }px`;
+    }
+
+    setImagePosition();
+
+    const shipimg = document.createElement('img');
+    shipimg.classList.add('ship-icon');
+    shipimg.src = shipImgUrl;
+    shipimg.alt = C.ships[ship.getName()].displayName;
+    imgContainer.appendChild(shipimg);
+
+    opponentBoard.appendChild(imgContainer);
+
+    // Trigger the fade in transition
+    imgContainer.style.animationDuration = `${1000 * C.gameSpeed}ms`;
+    imgContainer.classList.add('fade-in');
+
+    // Make sure that this element resizes properly when the window is changed
+    window.addEventListener('resize', () => {
+      setImagePosition();
+    });
+  }
+
   function displayOpponentResult(row, column, ship = null) {
     console.log('inside opponent result');
+
+    // First the enemy fires, and a message is displayed
     messageBox.write('Enemy fire commencing...');
     const cell = getCellFromCoordinates('player', row, column);
     const board = document.getElementById('playerboard');
     board.classList.add('boardflash');
+
+    // We wait to let the pingBoard animation play, then display result
     setTimeout(() => {
       pingBoard('player', row, column, () => {
         if (ship) {
           cell.classList.add('hit');
           addHitToHealthStatus(row, column);
-          messageBox.write(
-            `Ahh! Our ${C.ships[ship.getName()].displayName} has been damaged!`
-          );
+          if (ship.isSunk()) {
+            messageBox.write(
+              `I'm sorry sir, our <span class="ship">${
+                C.ships[ship.getName()].displayName
+              }</span> has been sunk!`
+            );
+            updateShipsSunkReport();
+          } else {
+            messageBox.write(
+              `Ahh! Our <span class="ship">${
+                C.ships[ship.getName()].displayName
+              }</span> has been damaged!`
+            );
+          }
         } else {
           cell.classList.add('miss');
           messageBox.write('They missed. We were lucky.');
@@ -485,9 +718,9 @@ export default function DomManager(player1, player2) {
         board.classList.remove('boardflash');
         setTimeout(() => {
           window.dispatchEvent(new Event('ready_for_player_attack'));
-        }, 1500);
+        }, 1500 * C.gameSpeed);
       });
-    }, 1000);
+    }, 1000 * C.gameSpeed);
   }
 
   function addHitToHealthStatus(row, column) {
@@ -504,12 +737,211 @@ export default function DomManager(player1, player2) {
     healthCell.classList.add('hit');
   }
 
+  function updateShipsSunkReport() {
+    const shipsSunkSpan = document.querySelector(
+      'aside#health span.ships-sunk'
+    );
+    const shipsSunk = p1board.getShipReport().shipsSunk;
+
+    shipsSunkSpan.textContent = shipsSunk;
+  }
+
+  function generateEndOfGameReport(winningPlayer) {
+    if (winningPlayer) {
+      winner = winningPlayer;
+      const battleStatsButton = document.querySelector('#stats button');
+      battleStatsButton.textContent = 'Open endgame screen';
+      battleStatsButton.classList.add('boardflash');
+    }
+
+    const endGameReportContainer = document.createElement('dialog');
+    endGameReportContainer.id = 'end-game-report-container';
+
+    const endGameTextContainer = document.createElement('div');
+    endGameTextContainer.id = 'end-game-text-container';
+
+    const header = document.createElement('h1');
+    const header2 = document.createElement('h2');
+
+    if (winner === 'player') {
+      header.textContent =
+        'May our victory today echo through history. It was an honor, sir.';
+      header2.textContent = 'You have won!';
+      header2.style.color = 'rgb(75, 255, 75)';
+      endGameTextContainer.append(header, header2);
+    } else if (winner === 'opponent') {
+      header.textContent =
+        'Although now we flee, from the ashes we shall rise another day...';
+      header2.textContent = 'You have lost.';
+      header2.style.color = 'rgb(255, 65, 65)';
+      endGameTextContainer.append(header, header2);
+    } else {
+      header.textContent = 'The battle rages on...';
+      endGameTextContainer.append(header);
+    }
+
+    const stats = document.createElement('h2');
+    stats.textContent = 'Battle Report';
+
+    const statsContainer = document.createElement('div');
+    statsContainer.id = 'end-game-stats-container';
+
+    const playerLog = p1board.getLog();
+    const opponentLog = p2board.getLog();
+
+    const playerReceivedHitsNumber = playerLog.reduce((acc, shot) => {
+      if (shot.hit === true) {
+        return (acc += 1);
+      } else {
+        return acc;
+      }
+    }, 0);
+
+    const playerReceivedShotsNumber = playerLog.length;
+    const playerReceivedShotsPercentHit = !playerReceivedShotsPercentHit
+      ? '0.0%'
+      : `${(
+          (playerReceivedHitsNumber / playerReceivedShotsNumber) *
+          100
+        ).toFixed(1)}%`;
+    const playerBoatsSunkNumber = p1board.getShipReport().shipsSunk;
+    console.log({
+      playerReceivedHitsNumber,
+      playerReceivedShotsNumber,
+      playerReceivedShotsPercentHit,
+    });
+
+    const opponentReceivedHitsNumber = opponentLog.reduce((acc, shot) => {
+      if (shot.hit === true) {
+        return (acc += 1);
+      } else {
+        return acc;
+      }
+    }, 0);
+
+    const opponentReceivedShotsNumber = opponentLog.length;
+
+    // If the opponentReceivedShotsNumber is 0, we can't divide by 0, so just write 0%
+    const opponentReceivedShotsPercentHit = !opponentReceivedShotsNumber
+      ? '0.0%'
+      : `${(
+          (opponentReceivedHitsNumber / opponentReceivedShotsNumber) *
+          100
+        ).toFixed(1)}%`;
+    const opponentBoatsSunkNumber = p2board.getShipReport().shipsSunk;
+    console.log({
+      opponentReceivedHitsNumber,
+      opponentReceivedShotsNumber,
+      opponentReceivedShotsPercentHit,
+    });
+
+    const gridHeaderPlayer = document.createElement('p');
+    gridHeaderPlayer.textContent = 'YOU';
+    const playerShotsFired = document.createElement('p');
+    playerShotsFired.innerHTML = `Shots fired: ${opponentReceivedShotsNumber}`;
+    const playerShotsHit = document.createElement('p');
+    playerShotsHit.innerHTML = `Shots hit: ${opponentReceivedHitsNumber}`;
+    const playerShotsHitPercent = document.createElement('p');
+    playerShotsHitPercent.innerHTML = `Hit rate: ${opponentReceivedShotsPercentHit}`;
+    const playerBoatsSunk = document.createElement('p');
+    playerBoatsSunk.innerHTML = `Boats sunk: ${opponentBoatsSunkNumber}`;
+
+    const gridHeaderOpponent = document.createElement('p');
+    gridHeaderOpponent.textContent = 'THE COMPUTER';
+    const opponentShotsFired = document.createElement('p');
+    opponentShotsFired.innerHTML = `Shots fired: ${playerReceivedShotsNumber}`;
+    const opponentShotsHit = document.createElement('p');
+    opponentShotsHit.innerHTML = `Shots hit: ${playerReceivedHitsNumber}`;
+    const opponentShotsHitPercent = document.createElement('p');
+    opponentShotsHitPercent.innerHTML = `Hit rate: ${playerReceivedShotsPercentHit}`;
+    const opponentBoatsSunk = document.createElement('p');
+    opponentBoatsSunk.innerHTML = `Boats sunk: ${playerBoatsSunkNumber}`;
+
+    statsContainer.append(
+      gridHeaderPlayer,
+      playerShotsFired,
+      playerShotsHit,
+      playerShotsHitPercent,
+      playerBoatsSunk,
+      gridHeaderOpponent,
+      opponentShotsFired,
+      opponentShotsHit,
+      opponentShotsHitPercent,
+      opponentBoatsSunk
+    );
+
+    const playTime = document.createElement('p');
+    playTime.id = 'play-time';
+
+    const playTimeEnd = Date.now();
+    const playTimeMS = playTimeEnd - playTimeBegin;
+    const playTimeHours = Math.floor(playTimeMS / 3600000);
+    const playTimeMinutes = Math.floor((playTimeMS % 3600000) / 60000);
+    const playTimeSeconds = Math.floor((playTimeMS % 60000) / 1000);
+    playTime.textContent = `Total play time: ${String(playTimeHours).padStart(
+      2,
+      '0'
+    )}:${String(playTimeMinutes).padStart(2, '0')}:${String(
+      playTimeSeconds
+    ).padStart(2, '0')}`;
+
+    const buttonRow = document.createElement('div');
+    const restartButton = document.createElement('button');
+    restartButton.addEventListener('click', () => {
+      window.dispatchEvent(new Event('restart_game'));
+      endGameReportContainer.close();
+    });
+    restartButton.textContent = 'Restart game';
+    const closeDialog = document.createElement('button');
+    closeDialog.textContent = 'Close window to view board';
+    closeDialog.setAttribute('formmethod', 'dialog');
+    closeDialog.addEventListener('click', (e) => {
+      e.preventDefault();
+      endGameReportContainer.close();
+      const flashingElements = document.querySelectorAll('.boardflash');
+      flashingElements.forEach(
+        (element) => (element.style.animationPlayState = 'running')
+      );
+    });
+    buttonRow.append(restartButton, closeDialog);
+
+    endGameTextContainer.append(stats, statsContainer, playTime, buttonRow);
+
+    endGameReportContainer.appendChild(endGameTextContainer);
+
+    document.body.appendChild(endGameReportContainer);
+
+    endGameReportContainer.showModal();
+    endGameReportOpen = true;
+    const flashingElements = document.querySelectorAll('.boardflash');
+    flashingElements.forEach(
+      (element) => (element.style.animationPlayState = 'paused')
+    );
+  }
+
+  function disableInteractivity() {
+    messageBox.clear();
+    const flashingElements = document.querySelectorAll('.boardflash');
+    flashingElements.forEach((element) =>
+      element.classList.remove('boardflash')
+    );
+
+    document.getElementById('playerboard').classList.add('disable-hover');
+    document.getElementById('opponentboard').classList.add('disable-hover');
+  }
+
   return {
     startAddShipPhase,
     initiateDomForGameLoop,
     playerSelectAttack,
     displayPlayerHit,
     displayPlayerMiss,
+    displayPlayerHitAfterSink,
     displayOpponentResult,
+    displayShipOnOpponentBoard,
+    getCellFromCoordinates,
+    updateShipsSunkReport,
+    generateEndOfGameReport,
+    disableInteractivity,
   };
 }

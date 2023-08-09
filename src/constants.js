@@ -14,6 +14,8 @@ export const C = {
   numberOfPlayers: 2,
   gameboardRows: 10,
   gameboardColumns: 10,
+  numberOfModelsToLoad: 6,
+  gameSpeed: 1,
   ships: {
     patrolBoat: {
       name: 'patrolBoat',

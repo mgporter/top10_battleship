@@ -51,26 +51,27 @@ export default function Player() {
       const shipSize = ship.getLength();
       const directions = Object.keys(C.paths);
       let canPlace = false;
+      let randomDirectionIndex;
       let cells = [];
 
       // Keep trying to randomly place the ship until board.canPlace === true
       do {
         const totalCells = board.getRows() * board.getColumns();
-        const randomeNumber = Math.floor(Math.random() * totalCells);
-        const randomeCoordinates = board.getCoordinatesByNumber(randomeNumber);
+        const randomNumber = Math.floor(Math.random() * totalCells);
+        const randomCoordinates = board.getCoordinatesByNumber(randomNumber);
 
-        const randomeDirectionIndex = Math.floor(Math.random() * 4);
+        randomDirectionIndex = Math.floor(Math.random() * 4);
 
         cells = shipPlacement.directionToCoordinates(
-          randomeCoordinates,
+          randomCoordinates,
           shipSize,
-          directions[randomeDirectionIndex]
+          directions[randomDirectionIndex]
         );
 
         canPlace = board.canPlace(shipSize, cells);
       } while (!canPlace);
-
-      board.placeShip(ship, cells);
+      console.log({ ship, cells });
+      board.placeShip(ship, cells, directions[randomDirectionIndex]);
     });
   }
 

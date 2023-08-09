@@ -68,7 +68,7 @@ export default function Gameboard(rows, columns) {
     return true;
   }
 
-  function placeShip(ship, coordinates) {
+  function placeShip(ship, coordinates, direction) {
     const coordinateCount = coordinates.length;
 
     if (ship.getLength() !== coordinateCount)
@@ -101,6 +101,8 @@ export default function Gameboard(rows, columns) {
 
     ships.push(ship);
     ship.isPlaced = true;
+    ship.direction = direction;
+    ship.startingCoordinates = [coordinates[0][0], coordinates[0][1]];
     cellsToAdd.forEach((cell, i) => cell.addShip(ship, i + 1));
   }
 
