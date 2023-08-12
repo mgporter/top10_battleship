@@ -54,13 +54,6 @@ export function FollowUpAttack(board, startingCoordinates) {
   function attack(lastResult) {
     // the result is the return of receiveAttack, which is a ship (if there
     // was a hit, or null if not
-    // console.log({
-    //   lastResult,
-    //   directions,
-    //   lastDirectionPath,
-    //   followUpIteration,
-    //   lastAttack,
-    // });
 
     if (!lastResult && !foundDirection) {
       return startAttack();

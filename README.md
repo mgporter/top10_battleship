@@ -21,3 +21,5 @@ Battleship project from the Odin Project, here: https://www.theodinproject.com/l
 9. End game screen with statistics from the game and total culmulative play time
 
 10. Gamespeed options to speed up or slow down the progression of the game.
+
+11. Use of grid for layout

@@ -83,6 +83,8 @@ export default function Gameboard(rows, columns) {
           }
         });
       });
+
+      ships.splice([ships.indexOf(ship)], 1);
     }
 
     const cellsToAdd = [];
@@ -90,12 +92,6 @@ export default function Gameboard(rows, columns) {
     for (let i = 0; i < coordinateCount; i++) {
       const row = coordinates[i][0];
       const column = coordinates[i][1];
-      // if (row > rows - 1 || column > columns - 1)
-      //   throw new Error('Coordinates are out of bounds');
-      // if (board[row][column].hasShip())
-      //   throw new Error('Cannot place a ship on top of another ship');
-
-      // push the cells into an array until we can be sure that they all are empty
       cellsToAdd.push(board[row][column]);
     }
 

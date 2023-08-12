@@ -5,10 +5,11 @@ import { C } from './constants';
 
 export default function LogicController() {
   // Debugging flags
-  let skipShipPlacement = true;
+  let skipShipPlacement = false;
   let showEnemyShips = false;
   let showPlayerShips = false;
   let skipToEndGameDialog = false;
+  let skipPlayerAttacks = false;
   let playerGoesFirst = true; // This is not set up yet
   C.gameSpeed = 1;
 
@@ -84,7 +85,16 @@ export default function LogicController() {
   }
 
   function playerAttack() {
-    dom.playerSelectAttack();
+    if (!skipPlayerAttacks) {
+      dom.playerSelectAttack();
+    } else {
+      window.dispatchEvent(
+        new CustomEvent('player_target_selected', {
+          detail: { row: 0, column: 0 },
+        })
+      );
+    }
+
     if (showEnemyShips) {
       showShipsOnBoard('opponent');
     }
@@ -124,7 +134,8 @@ export default function LogicController() {
     const row = e.detail.row;
     const column = e.detail.column;
     console.log(`player attacked at ${row} and ${column}`);
-    const ship = p2board.receiveAttack([row, column]);
+    let ship;
+    if (!skipPlayerAttacks) ship = p2board.receiveAttack([row, column]);
 
     if (ship) {
       if (ship.isSunk()) {
@@ -229,6 +240,5 @@ export default function LogicController() {
   /* 
   Last features:
   Attribution dialog
-  player's ships turn upside down on sink
   */
 }

@@ -6,14 +6,7 @@ import carrierGLB from './models/charles_de_gaulle_french_aircraft_carrier.glb';
 import patrolBoatGLB from './models/smallwarship.glb';
 import submarineGLB from './models/the_project_941__akula__typhoon_submarine.glb';
 import destroyerGLB from './models/bengaluru_class_destroyer_d67.glb';
-import explosionGLB from './models/explosion.glb';
 import gridGLB from './models/grid_4_x_4_navigation.glb';
-
-// battleship: https://free3d.com/3d-model/wwii-ship-uk-king-george-v-class-battleship-v1--185381.html
-// smallwarship: https://sketchfab.com/3d-models/warship-736cca123b3e469996489c8c6d2cd4c0
-// submarine: https://sketchfab.com/3d-models/the-project-941-akula-typhoon-submarine-b7aef99dcf9f4252887a02a7afb3b75e
-// carrier: https://sketchfab.com/3d-models/low-poly-aircraft-carrier-with-mini-jets-3d5047d68f064cdca0db39354b567241
-// destroyer: https://sketchfab.com/3d-models/bengaluru-class-destroyer-d67-27a867360a1645208e689dd0b3538261
 
 const normalizers = {
   // Position is with front at 0,0, with end going to the right
@@ -92,13 +85,14 @@ const normalizers = {
 };
 
 export default function Model() {
+  const enableDebugMode = false;
+
   const playerBoard = document.getElementById('playerboard');
   const mainElement = document.querySelector('main');
   const OBJloader = new OBJLoader();
   const GLTFloader = new GLTFLoader();
   const ships = {};
   let playerBoardRect = playerBoard.getBoundingClientRect();
-  let playerBoardWidth = playerBoardRect.left * 2 + playerBoardRect.width;
 
   // Create scene, camera, and renderer
   const scene = new THREE.Scene();
@@ -133,18 +127,6 @@ export default function Model() {
     loadModel(submarineGLB, 'submarine', 'glb'),
     loadModel(destroyerGLB, 'destroyer', 'glb'),
   ];
-
-  // loadModel(explosionGLB, 'explosion', 'glb').then((model) => {
-  //   scene.add(model);
-  //   animate();
-  // });
-
-  // The grid is useful for debugging as we can use it to align the 3d canvas space
-  // with the CSS grid in the DOM
-  // loadModel(gridGLB, 'grid', 'glb').then((model) => {
-  //   scene.add(model);
-  //   animate();
-  // });
 
   Promise.all(loadModelPromises).then(() => {
     window.dispatchEvent(new Event('all_models_loaded'));
@@ -261,6 +243,7 @@ export default function Model() {
 
   function addModelToScene(modelName, direction, firstRow, firstColumn) {
     const ship = ships[modelName];
+    ship.dataDirection = direction;
     const normalizer = normalizers[modelName];
 
     // The columns (y axis) are the Z axis in three.js
@@ -278,74 +261,105 @@ export default function Model() {
     ship.rotation.z = rotZ;
 
     scene.add(ship);
+    render();
+  }
+
+  function render() {
+    renderer.render(scene, camera);
+  }
+
+  function sinkShip(shipName) {
+    const start = Date.now();
+    const animationLength = 3000;
+    const ship = ships[shipName];
+    let axis = '';
+    let offsetMultiply = 1;
+    let offsetAdd = 0;
+    let oldPosY = 0;
+    let sinkAmount = 0;
+    switch (shipName) {
+      case 'patrolBoat':
+        ship.rotation.order = 'XYZ';
+        axis = 'z';
+        offsetMultiply = -1;
+        oldPosY = ship.position.y;
+        sinkAmount = -2;
+        break;
+      case 'destroyer':
+        ship.rotation.order = 'YXZ';
+        axis = 'x';
+        oldPosY = ship.position.y;
+        sinkAmount = 0.6;
+        break;
+      case 'submarine':
+        ship.rotation.order = 'XYZ';
+        axis = 'z';
+        oldPosY = ship.position.y;
+        sinkAmount = -1;
+        break;
+      case 'battleship':
+        ship.rotation.order = 'XYZ';
+        if (ship.dataDirection === 'left' || ship.dataDirection === 'right') {
+          axis = 'x';
+          offsetAdd = -1.5708;
+        } else {
+          axis = 'y';
+          offsetAdd = 0;
+        }
+
+        offsetMultiply = -1;
+        oldPosY = ship.position.y;
+        sinkAmount = 1;
+        break;
+      case 'carrier':
+        ship.rotation.order = 'YXZ';
+        axis = 'z';
+        oldPosY = ship.position.y;
+        sinkAmount = 0;
+        break;
+    }
+    const leftRight =
+      ship.dataDirection === 'left' || ship.dataDirection === 'right'
+        ? true
+        : false;
+
     animate();
-  }
 
-  const animationsObjects = [];
+    function animate() {
+      const animation = requestAnimationFrame(animate);
+      const normalizedFrame = (Date.now() - start) / animationLength; // number between 0 and 1
+      const normalizedRotation = parametricTransform(normalizedFrame);
+      ship.rotation[axis] =
+        normalizedRotation * -3.14159 * offsetMultiply + offsetAdd;
+      ship.position.y = normalizedRotation * sinkAmount + oldPosY;
 
-  let carrier;
-  animate2();
+      renderer.render(scene, camera);
 
-  window.addEventListener('wheel', () => {
-    carrier = ships['carrier'];
-    console.log(carrier);
-    createSinkAnimation({
-      mesh: carrier,
-      startPosition: new THREE.Vector3(0, 200, 0),
-      endPosition: new THREE.Vector3(0, 0, 0),
-    });
-  });
-
-  function createSinkAnimation({ mesh, startPosition, endPosition }) {
-    mesh.userData.mixer = new THREE.AnimationMixer(mesh);
-    let track = new THREE.VectorKeyframeTrack(
-      '.position',
-      [0, 1, 2],
-      [
-        startPosition.x,
-        startPosition.y,
-        startPosition.z,
-        endPosition.x,
-        endPosition.y,
-        endPosition.z,
-      ]
-    );
-    const animationClip = new THREE.AnimationClip(null, 5, [track]);
-    const animationAction = mesh.userData.mixer.clipAction(animationClip);
-    animationAction.setLoop(THREE.LoopRepeat);
-    animationAction.play();
-    mesh.userData.clock = new THREE.Clock();
-    animationsObjects.push(mesh);
-  }
-
-  function threeRender() {
-    renderer.render(scene, camera);
-
-    animationsObjects.forEach((mesh) => {
-      if (mesh.userData.clock && mesh.userData.mixer) {
-        mesh.userData.mixer.update(mesh.userData.clock.getDelta());
+      if (normalizedFrame > 1) {
+        cancelAnimationFrame(animation);
       }
+    }
+  }
+
+  function parametricTransform(t) {
+    return (t * t) / (2 * (t * t - t) + 1);
+  }
+
+  function debugMode(moveObject = 'camera') {
+    if (!enableDebugMode) return;
+
+    // The grid is useful for debugging as we can use it to align the 3d canvas space
+    // with the CSS grid in the DOM
+    loadModel(gridGLB, 'grid', 'glb').then((model) => {
+      scene.add(model);
+      render();
     });
-  }
-
-  function animate2() {
-    requestAnimationFrame(animate);
-    threeRender();
-  }
-
-  function animate() {
-    // requestAnimationFrame(animate);
-    renderer.render(scene, camera);
-  }
-
-  // For debugging
-  function renderTest() {
-    // Moving up: 28.4 to -24.8; range 53.2; one space = 5.32
-    // Moving sideways: 26.5 to -26.5; range 53; one space = 5.3
 
     let moveAmountX = 0.2;
     let moveAmountY = 0.2;
-    let moveObject = 'explosion';
+
+    // These keybindings let us move a model around in the 3D space do that
+    // we can get it lined up with everything else
     window.addEventListener('keydown', (e) => {
       if (e.key === 'e') {
         ships[moveObject].position.z += moveAmountY;
@@ -410,9 +424,11 @@ export default function Model() {
     });
   }
 
+  debugMode();
+
   return {
-    animate,
     addModelToScene,
     resizeCanvasToDisplaySize,
+    sinkShip,
   };
 }

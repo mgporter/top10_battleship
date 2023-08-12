@@ -62,8 +62,8 @@ export default function DomManager(player1, player2) {
     }
   }
 
+  // Not needed
   function disableZoom() {
-    // Disable scroll and resize
     document.addEventListener('keydown', function (e) {
       if (e.ctrlKey && (e.key === '+' || e.key == '-' || e.key == '=')) {
         e.preventDefault();
@@ -82,7 +82,114 @@ export default function DomManager(player1, player2) {
     );
   }
 
-  function modelCredits() {}
+  function showCredits() {
+    const credits = document.getElementById('credits-container-backdrop');
+    credits.classList.add('open');
+  }
+
+  function hideCredits() {
+    const credits = document.getElementById('credits-container-backdrop');
+    credits.classList.remove('open');
+  }
+
+  function showBattleStats() {
+    const endGameReport = document.getElementById('end-game-report-backdrop');
+    endGameReport.classList.add('open');
+  }
+
+  function hideBattleStats() {
+    const endGameReport = document.getElementById('end-game-report-backdrop');
+    endGameReport.classList.remove('open');
+  }
+
+  function createCreditsModal() {
+    const backdrop = document.createElement('div');
+    backdrop.id = 'credits-container-backdrop';
+    backdrop.classList.add('backdrop');
+
+    const creditsContainer = document.createElement('div');
+    creditsContainer.id = 'credits-container';
+
+    const header = document.createElement('h1');
+    header.textContent =
+      'A special thanks to these creators for their awesome work';
+    creditsContainer.appendChild(header);
+
+    const table = document.createElement('table');
+    const rowHead = document.createElement('tr');
+    const th1 = document.createElement('th');
+    th1.textContent = '';
+    const th2 = document.createElement('th');
+    th2.textContent = 'author';
+    const th3 = document.createElement('th');
+    th3.textContent = 'webpage';
+
+    rowHead.append(th1, th2, th3);
+    table.append(rowHead);
+
+    const credits = [
+      {
+        name: 'Patrol Boat model',
+        author: 'Pixel',
+        urlDisplay: 'https://sketchfab.com/...',
+        url: 'https://sketchfab.com/3d-models/warship-736cca123b3e469996489c8c6d2cd4c0',
+      },
+      {
+        name: 'Destroyer model',
+        author: 'Peter Primini',
+        urlDisplay: 'https://sketchfab.com/...',
+        url: 'https://sketchfab.com/3d-models/bengaluru-class-destroyer-d67-27a867360a1645208e689dd0b3538261',
+      },
+      {
+        name: 'Submarine model',
+        author: 'Yakudami',
+        urlDisplay: 'https://sketchfab.com/...',
+        url: 'https://sketchfab.com/3d-models/the-project-941-akula-typhoon-submarine-b7aef99dcf9f4252887a02a7afb3b75e',
+      },
+      {
+        name: 'Battleship model',
+        author: 'printable_models',
+        urlDisplay: 'https://free3d.com/...',
+        url: 'https://free3d.com/3d-model/wwii-ship-uk-king-george-v-class-battleship-v1--185381.html',
+      },
+      {
+        name: 'Carrier model',
+        author: 'Pixel',
+        urlDisplay: 'https://sketchfab.com/...',
+        url: 'https://sketchfab.com/3d-models/low-poly-aircraft-carrier-with-mini-jets-3d5047d68f064cdca0db39354b567241',
+      },
+      {
+        name: 'Image assets',
+        author: 'Canva',
+        urlDisplay: 'https://www.canva.com/...',
+        url: 'https://www.canva.com/',
+      },
+    ];
+
+    for (let asset of credits) {
+      const row = document.createElement('tr');
+
+      const td1 = document.createElement('td');
+      td1.textContent = asset.name;
+      const td2 = document.createElement('td');
+      td2.textContent = asset.author;
+      const td3 = document.createElement('td');
+      td3.innerHTML = `<a href="${asset.url}" target="_blank">${asset.urlDisplay}</a>`;
+
+      row.append(td1, td2, td3);
+      table.append(row);
+    }
+
+    creditsContainer.appendChild(table);
+
+    const clickDescription = document.createElement('p');
+    clickDescription.textContent = 'click anywhere outside the table to close';
+    creditsContainer.appendChild(clickDescription);
+
+    backdrop.appendChild(creditsContainer);
+
+    return backdrop;
+  }
 
   function buildPageStructure() {
     const gameContainer = document.createElement('div');
@@ -113,6 +220,7 @@ export default function DomManager(player1, player2) {
     const credits = document.createElement('a');
     credits.textContent = 'Model credits';
     credits.id = 'model-credits';
+
     topLeftContainer.append(createdByContainer, credits);
     opponentHeader.appendChild(topLeftContainer);
 
@@ -139,6 +247,26 @@ export default function DomManager(player1, player2) {
     );
 
     document.body.appendChild(gameContainer);
+
+    const creditDialogBox = createCreditsModal();
+    document.body.appendChild(creditDialogBox);
+
+    credits.addEventListener('click', () => {
+      pauseAnimations();
+      showCredits();
+    });
+
+    const creditsBackdrop = document.getElementById(
+      'credits-container-backdrop'
+    );
+    creditsBackdrop.addEventListener('click', (e) => {
+      const isInside = e.target.closest('table');
+
+      if (!isInside) {
+        resumeAnimations();
+        hideCredits();
+      }
+    });
   }
 
   function buildProgressBar() {
@@ -162,14 +290,6 @@ export default function DomManager(player1, player2) {
       }
     });
   }
-
-  // function incrementProgressBar() {
-  //   const progress = document.getElementById('progress');
-  //   console.log('add progress');
-  //   if (!progress) return;
-
-  //   progress.value = progress.value + 1;
-  // }
 
   function createPlayerboard() {
     const playerBoard = document.createElement('div');
@@ -226,17 +346,6 @@ export default function DomManager(player1, player2) {
 
     const battleStatsLink = document.createElement('button');
     battleStatsLink.textContent = 'Display battle stats';
-    battleStatsLink.addEventListener('click', () => {
-      generateEndOfGameReport();
-    });
-
-    // Close the end game report when the user clicks-off
-    // window.addEventListener('click', (e) => {
-    //   if (!endGameReportOpen) return;
-    //   if (e.target.matches('#end-game-report-container')) return;
-    //   console.log('close');
-    //   document.getElementById('end-game-report-container').close();
-    // });
 
     statsAside.appendChild(battleStatsLink);
 
@@ -416,6 +525,41 @@ export default function DomManager(player1, player2) {
 
     opponentSection.appendChild(opponentBoard);
     statsContainer.appendChild(statsAside);
+
+    // Create battle stats menu structure, which will be generated and displayed when
+    // user clicks the battle stats button
+    const backdrop = document.createElement('div');
+    backdrop.id = 'end-game-report-backdrop';
+    backdrop.classList.add('backdrop');
+
+    const endGameReportContainer = document.createElement('div');
+    endGameReportContainer.id = 'end-game-report-container';
+
+    backdrop.appendChild(endGameReportContainer);
+    document.body.appendChild(backdrop);
+
+    const battleStatsButton = document.querySelector('#stats button');
+    battleStatsButton.addEventListener('click', (e) => {
+      const endGameDialogBox = document.getElementById(
+        'end-game-report-container'
+      );
+      endGameDialogBox.textContent = '';
+      const battleReport = generateEndOfGameReport();
+      endGameDialogBox.appendChild(battleReport);
+
+      pauseAnimations();
+      showBattleStats();
+    });
+
+    backdrop.addEventListener('click', (e) => {
+      const isInside = e.target.closest('#end-game-report-container');
+      const closeButton = document.querySelector('#end-game-close-button');
+
+      if (!isInside || e.target === closeButton) {
+        hideBattleStats();
+        resumeAnimations();
+      }
+    });
 
     const opponentHeading = document.createElement('div');
     opponentHeading.style.opacity = 0;
@@ -694,16 +838,20 @@ export default function DomManager(player1, player2) {
     // We wait to let the pingBoard animation play, then display result
     setTimeout(() => {
       pingBoard('player', row, column, () => {
+        // If there was a hit...
         if (ship) {
           cell.classList.add('hit');
           addHitToHealthStatus(row, column);
+          // ...and if they sunk our ship
           if (ship.isSunk()) {
             messageBox.write(
               `I'm sorry sir, our <span class="ship">${
                 C.ships[ship.getName()].displayName
               }</span> has been sunk!`
             );
+            model.sinkShip(ship.getName());
             updateShipsSunkReport();
+            // ...but if they didn't sink it yet
           } else {
             messageBox.write(
               `Ahh! Our <span class="ship">${
@@ -711,10 +859,12 @@ export default function DomManager(player1, player2) {
               }</span> has been damaged!`
             );
           }
+          // And if they didn't get a hit at all
         } else {
           cell.classList.add('miss');
           messageBox.write('They missed. We were lucky.');
         }
+        // finally, in any case, do this
         board.classList.remove('boardflash');
         setTimeout(() => {
           window.dispatchEvent(new Event('ready_for_player_attack'));
@@ -746,16 +896,18 @@ export default function DomManager(player1, player2) {
     shipsSunkSpan.textContent = shipsSunk;
   }
 
-  function generateEndOfGameReport(winningPlayer) {
+  function generateEndOfGameReport(winningPlayer = null) {
+    // The function is called when somebody wins the game. In that case, an argument will
+    // be passed and we will make some changes to the board. This function is also called
+    // when a player clicks on the battle stats button, in which case no argument is
+    // passed.
+
     if (winningPlayer) {
       winner = winningPlayer;
       const battleStatsButton = document.querySelector('#stats button');
       battleStatsButton.textContent = 'Open endgame screen';
       battleStatsButton.classList.add('boardflash');
     }
-
-    const endGameReportContainer = document.createElement('dialog');
-    endGameReportContainer.id = 'end-game-report-container';
 
     const endGameTextContainer = document.createElement('div');
     endGameTextContainer.id = 'end-game-text-container';
@@ -798,18 +950,13 @@ export default function DomManager(player1, player2) {
     }, 0);
 
     const playerReceivedShotsNumber = playerLog.length;
-    const playerReceivedShotsPercentHit = !playerReceivedShotsPercentHit
+    const playerReceivedShotsPercentHit = !playerReceivedShotsNumber
       ? '0.0%'
       : `${(
           (playerReceivedHitsNumber / playerReceivedShotsNumber) *
           100
         ).toFixed(1)}%`;
     const playerBoatsSunkNumber = p1board.getShipReport().shipsSunk;
-    console.log({
-      playerReceivedHitsNumber,
-      playerReceivedShotsNumber,
-      playerReceivedShotsPercentHit,
-    });
 
     const opponentReceivedHitsNumber = opponentLog.reduce((acc, shot) => {
       if (shot.hit === true) {
@@ -829,11 +976,6 @@ export default function DomManager(player1, player2) {
           100
         ).toFixed(1)}%`;
     const opponentBoatsSunkNumber = p2board.getShipReport().shipsSunk;
-    console.log({
-      opponentReceivedHitsNumber,
-      opponentReceivedShotsNumber,
-      opponentReceivedShotsPercentHit,
-    });
 
     const gridHeaderPlayer = document.createElement('p');
     gridHeaderPlayer.textContent = 'YOU';
@@ -887,35 +1029,34 @@ export default function DomManager(player1, player2) {
 
     const buttonRow = document.createElement('div');
     const restartButton = document.createElement('button');
+
     restartButton.addEventListener('click', () => {
       window.dispatchEvent(new Event('restart_game'));
-      endGameReportContainer.close();
     });
+
     restartButton.textContent = 'Restart game';
     const closeDialog = document.createElement('button');
-    closeDialog.textContent = 'Close window to view board';
-    closeDialog.setAttribute('formmethod', 'dialog');
-    closeDialog.addEventListener('click', (e) => {
-      e.preventDefault();
-      endGameReportContainer.close();
-      const flashingElements = document.querySelectorAll('.boardflash');
-      flashingElements.forEach(
-        (element) => (element.style.animationPlayState = 'running')
-      );
-    });
+    closeDialog.textContent = 'Close window and go back to board';
+    closeDialog.id = 'end-game-close-button';
+
     buttonRow.append(restartButton, closeDialog);
 
     endGameTextContainer.append(stats, statsContainer, playTime, buttonRow);
 
-    endGameReportContainer.appendChild(endGameTextContainer);
+    return endGameTextContainer;
+  }
 
-    document.body.appendChild(endGameReportContainer);
-
-    endGameReportContainer.showModal();
-    endGameReportOpen = true;
+  function pauseAnimations() {
     const flashingElements = document.querySelectorAll('.boardflash');
     flashingElements.forEach(
       (element) => (element.style.animationPlayState = 'paused')
+    );
+  }
+
+  function resumeAnimations() {
+    const flashingElements = document.querySelectorAll('.boardflash');
+    flashingElements.forEach(
+      (element) => (element.style.animationPlayState = 'running')
     );
   }
 

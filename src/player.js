@@ -75,17 +75,6 @@ export default function Player() {
     });
   }
 
-  // function attack(startingCoordinates = null) {
-  //   // If no starting coordinates are given, this is a regular, random attack
-  //   if (!startingCoordinates) {
-  //     return doRandomAttack(board)
-  //   } else {
-  //   // else, we need to do a follow-up attack around the given coordinates
-
-  //   }
-  //   const followUpAttack = FollowUpAttack(board, startingCoordinates);
-  // }
-
   return {
     getBoard,
     getShips,
