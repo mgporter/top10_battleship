@@ -359,6 +359,7 @@ main {
   z-index: 10;
   bottom: 20px;
   transition: none;
+  pointer-events: none;
 }
 
 #playerboard {
@@ -386,8 +387,7 @@ main {
   border: 2px solid rgb(0, 150, 53);
   z-index: 5;
   transition: none;
-  /* top: 0px; */
-  /* transition: 200ms; */
+  pointer-events: all;
 }
 
 .cell {
